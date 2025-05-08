@@ -29,6 +29,13 @@ options:
         type: str
         default: "present"
         choices: [ "present", "absent" ]
+   propagate:
+        description:
+            - Apply permissions and tag filters to all subgroups.
+        required: false
+        type: bool
+        default: "false"
+        choices: [ "false", "true" ]
     host_groups:
         description:
             - List of host groups to create or delete.
@@ -74,7 +81,7 @@ EXAMPLES = r'''
       - Example group1
       - Example group2
 
-# Limit the Zabbix group creations to one host since Zabbix can return an error when doing concurrent updates
+# Limit the Zabbix group creations to one host since Zabbix can return an error when doing concurrent updates. propagate permission to sub-groups
 - name: Create host groups
   # set task level variables as we change ansible_connection plugin here
   vars:
@@ -87,6 +94,7 @@ EXAMPLES = r'''
       ansible_host: zabbix-example-fqdn.org
   community.zabbix.zabbix_group:
     state: present
+    propagate: true
     host_groups:
       - Example group1
       - Example group2
@@ -115,6 +123,16 @@ class HostGroup(ZabbixBase):
             return group_add_list
         except Exception as e:
             self._module.fail_json(msg="Failed to create host group(s): %s" % e)
+    
+   # propagate host permission(s)
+    def propagate_host_group_permission(self,group_ids)
+       for group_id in group_ids
+          try:
+               if self._module.check_mode:
+                   self._module.exit_json(changed=True)
+               self._zapi.hostgroup.propagate({'groups': group_id})
+          except Exception as e:
+            self._module.fail_json(msg="Failed to propagate permission for host group, Exception: %s" % e)
 
     # delete host group(s)
     def delete_host_group(self, group_ids):
@@ -157,6 +175,18 @@ def main():
     if host_groups:
         group_ids, group_list = hostGroup.get_group_ids(host_groups)
 
+    if propagate:
+       #propagate permission to sub-groups
+       if group_ids:
+          propagate_group_names = []
+          hostGroup.propagate_host_group_permission(group_ids)
+          for group in group_list
+             propagate_group_names.append(group['name'])
+          module.exit_json(changed=True,
+                             result="Successfully propagate permission for host group(s): %s." % ",".join(delete_group_names)) 
+       else:
+          module.exit_json(changed=False, result="No host group(s) to propagate.")
+          
     if state == "absent":
         # delete host groups
         if group_ids:
