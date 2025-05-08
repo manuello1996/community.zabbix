@@ -229,6 +229,25 @@ Otherwise it just for the Zabbix Agent or for the Zabbix Agent 2.
 * `zabbix_win_install_dir_bin`: The directory where Zabbix binary file needs to be installed.
 * `zabbix_win_package`: file name pattern (zip only). This will be used to generate the `zabbix_win_download_link` variable.
 
+### Tweaking the windows service
+
+There might be times where the service is unpredictable, and rather than
+investigating or dealing with it, you can just have it restart upon failure.
+Here are some suggested values for tweaking the service.
+
+* `zabbix_agent_service_start_mode:` `auto`, zabbix comes by default with `delayed`.
+* ```yaml
+  zabbix_agent_service_failure_actions:
+      - type: restart
+        delay_ms: 10000
+      - type: restart
+        delay_ms: 20000
+      - type: restart
+        delay_ms: 40000
+  ```
+* `zabbix_agent_service_failure_reset_period_sec:` `86400` is probably a reasonable time
+
+
 ## macOS Variables
 
 **NOTE**
@@ -427,27 +446,28 @@ Including an example of how to use your role (for instance, with variables passe
 ```yaml
     - hosts: all
       roles:
-         - role: community.zabbix.zabbix_agent
-           zabbix_agent_server: 192.168.33.30
-           zabbix_agent_serveractive: 192.168.33.30
-           zabbix_api_server_host: zabbix.example.com
-           zabbix_api_login_user: Admin
-           zabbix_api_login_pass: zabbix
-           zabbix_api_create_hostgroup: true
-           zabbix_api_create_hosts: true
-           zabbix_agent_host_state: present
-           zabbix_host_groups:
-             - Linux Servers
-           zabbix_agent_link_templates:
-             - Template OS Linux
-             - Apache APP Template
-           zabbix_agent_macros:
-             - macro_key: apache_type
-               macro_value: reverse_proxy
-               macro_type: text
-           zabbix_agent_tags:
-             - tag: environment
-               value: production
+        - role: community.zabbix.zabbix_agent
+          vars:
+            zabbix_agent_server: 192.168.33.30
+            zabbix_agent_serveractive: 192.168.33.30
+            zabbix_api_server_host: zabbix.example.com
+            zabbix_api_login_user: Admin
+            zabbix_api_login_pass: zabbix
+            zabbix_api_create_hostgroup: true
+            zabbix_api_create_hosts: true
+            zabbix_agent_host_state: present
+            zabbix_host_groups:
+              - Linux Servers
+            zabbix_agent_link_templates:
+              - Template OS Linux
+              - Apache APP Template
+            zabbix_agent_macros:
+              - macro_key: apache_type
+                macro_value: reverse_proxy
+                macro_type: text
+            zabbix_agent_tags:
+              - tag: environment
+                value: production
 ```
 
 ## Combination of group_vars and playbook
